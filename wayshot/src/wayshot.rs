@@ -21,7 +21,7 @@ use rustix::runtime::{self, Fork};
 
 fn select_output<T>(outputs: &[T]) -> Option<usize>
 where
-    T: ToString,
+    T: ToString + std::fmt::Display,
 {
     let Ok(selection) = FuzzySelect::with_theme(&ColorfulTheme::default())
         .with_prompt("Choose Screen")
@@ -65,12 +65,12 @@ fn main() -> Result<()> {
         .or(input_encoding)
         .unwrap_or(file.encoding.unwrap_or_default());
 
-    if let Some(ie) = input_encoding {
-        if ie != encoding {
-            tracing::warn!(
-                "The encoding requested '{encoding}' does not match the output file's encoding '{ie}'. Still using the requested encoding however.",
-            );
-        }
+    if let Some(ie) = input_encoding
+        && ie != encoding
+    {
+        tracing::warn!(
+            "The encoding requested '{encoding}' does not match the output file's encoding '{ie}'. Still using the requested encoding however.",
+        );
     }
 
     let file_name_format = cli.file_name_format.unwrap_or(
@@ -124,17 +124,14 @@ fn main() -> Result<()> {
     let image_buffer = if cli.geometry {
         wayshot_conn.screenshot_freeze(
             |w_conn| {
-                let info = libwaysip::get_area(
-                    Some(libwaysip::WaysipConnection {
-                        connection: &w_conn.conn,
-                        globals: &w_conn.globals,
-                    }),
-                    libwaysip::SelectionType::Area,
-                )
-                .map_err(|e| libwayshot_xcap::Error::FreezeCallbackError(e.to_string()))?
-                .ok_or(libwayshot_xcap::Error::FreezeCallbackError(
-                    "Failed to capture the area".to_string(),
-                ))?;
+                let info = libwaysip::WaySip::new()
+                    .with_connection(w_conn.conn.clone())
+                    .with_selection_type(libwaysip::SelectionType::Area)
+                    .get()
+                    .map_err(|e| libwayshot_xcap::Error::FreezeCallbackError(e.to_string()))?
+                    .ok_or(libwayshot_xcap::Error::FreezeCallbackError(
+                        "Failed to capture the area".to_string(),
+                    ))?;
                 waysip_to_region(info.size(), info.left_top_point())
             },
             cursor,

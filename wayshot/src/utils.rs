@@ -1,5 +1,5 @@
 use clap::ValueEnum;
-use eyre::{ContextCompat, Error, bail};
+use eyre::{ContextCompat, Error};
 
 use serde::{Deserialize, Serialize};
 use std::{
@@ -13,7 +13,10 @@ use chrono::Local;
 use libwayshot_xcap::Result;
 use libwayshot_xcap::region::{LogicalRegion, Position, Region, Size};
 
-pub fn waysip_to_region(size: libwaysip::Size, point: libwaysip::Point) -> Result<LogicalRegion> {
+pub fn waysip_to_region(
+    size: libwaysip::Size,
+    point: libwaysip::Position,
+) -> Result<LogicalRegion> {
     let size: Size = Size {
         width: size.width.try_into().map_err(|_| {
             libwayshot_xcap::Error::FreezeCallbackError("width cannot be negative".to_string())
@@ -33,12 +36,13 @@ pub fn waysip_to_region(size: libwaysip::Size, point: libwaysip::Point) -> Resul
 }
 
 /// Supported image encoding formats.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ValueEnum, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, ValueEnum, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum EncodingFormat {
     /// JPG/JPEG encoder.
     Jpg,
     /// PNG encoder.
+    #[default]
     Png,
     /// PPM encoder.
     Ppm,
@@ -48,12 +52,6 @@ pub enum EncodingFormat {
     Webp,
     /// Avif encoder,
     Avif,
-}
-
-impl Default for EncodingFormat {
-    fn default() -> Self {
-        Self::Png
-    }
 }
 
 impl From<EncodingFormat> for image::ImageFormat {
@@ -113,15 +111,15 @@ impl FromStr for EncodingFormat {
     type Err = Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        Ok(match s {
-            "jpg" | "jpeg" => Self::Jpg,
-            "png" => Self::Png,
-            "ppm" => Self::Ppm,
-            "qoi" => Self::Qoi,
-            "webp" => Self::Webp,
-            "avif" => Self::Avif,
-            _ => bail!("unsupported extension '{s}'"),
-        })
+        match s {
+            "jpg" | "jpeg" => Ok(Self::Jpg),
+            "png" => Ok(Self::Png),
+            "ppm" => Ok(Self::Ppm),
+            "qoi" => Ok(Self::Qoi),
+            "webp" => Ok(Self::Webp),
+            "avif" => Ok(Self::Avif),
+            other => Err(eyre::eyre!("unsupported extension '{other}'")),
+        }
     }
 }
 
