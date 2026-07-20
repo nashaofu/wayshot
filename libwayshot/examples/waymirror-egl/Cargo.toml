@@ -4,15 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-gl = "0.14.0"
-gl_loader = "0.1.2"
-khronos-egl = { version = "6.0.0",features = ["static"]  }
+gl = "0.14"
+gl_loader = "0.1"
+khronos-egl = { version = "6.0",features = ["static"]  }
 thiserror = "2"
-tracing = "0.1.41"
-tracing-subscriber = "0.3.19"
-wayland-backend = { version = "0.3.8", features = ["client_system"] }
-wayland-client = { version = "0.31.8" }
-wayland-egl = { version = "0.32.5" }
-wayland-protocols = { version = "0.32.6", features = ["client"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+wayland-backend = { version = "0.3", features = ["client_system"] }
+wayland-client = { version = "0.31" }
+wayland-egl = { version = "0.32" }
+wayland-protocols = { version = "0.32", features = ["client"] }
 libwayshot-xcap = { path="../.." }
-libloading = "0.8.6"
+libloading = "0.9"
