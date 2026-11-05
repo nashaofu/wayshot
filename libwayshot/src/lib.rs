@@ -1090,7 +1090,13 @@ impl WayshotConnection {
         cursor_overlay: bool,
     ) -> Result<DynamicImage> {
         let (frame_copy, _) = self.capture_frame_copy(cursor_overlay, output_info, None)?;
-        (&frame_copy).try_into()
+        let image = (&frame_copy).try_into()?;
+        Ok(image_util::rotate_image_buffer(
+            image,
+            frame_copy.transform,
+            frame_copy.logical_region.inner.size,
+            1.0,
+        ))
     }
 
     /// Take a screenshot from all of the specified outputs.

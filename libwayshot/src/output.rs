@@ -29,7 +29,23 @@ impl Display for OutputInfo {
 }
 
 impl OutputInfo {
+    pub(crate) fn rotated_physical_size(&self) -> Size {
+        match self.transform {
+            wl_output::Transform::_90
+            | wl_output::Transform::_270
+            | wl_output::Transform::Flipped90
+            | wl_output::Transform::Flipped270 => Size {
+                width: self.physical_size.height,
+                height: self.physical_size.width,
+            },
+            _ => self.physical_size,
+        }
+    }
+
     pub(crate) fn scale(&self) -> f64 {
-        self.physical_size.height as f64 / self.logical_region.inner.size.height as f64
+        if self.logical_region.inner.size.height == 0 {
+            return 1.0;
+        }
+        self.rotated_physical_size().height as f64 / self.logical_region.inner.size.height as f64
     }
 }

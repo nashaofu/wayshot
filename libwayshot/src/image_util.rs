@@ -10,14 +10,6 @@ pub(crate) fn rotate_image_buffer(
     logical_size: Size,
     max_scale: f64,
 ) -> DynamicImage {
-    // TODO Better document whether width and height are before or after the transform.
-    // Perhaps this should be part of a cleanup of the FrameCopy struct.
-    let (logical_width, _logical_height) = match transform {
-        Transform::_90 | Transform::_270 | Transform::Flipped90 | Transform::Flipped270 => {
-            (logical_size.height, logical_size.width)
-        }
-        _ => (logical_size.width, logical_size.height),
-    };
     let rotated_image = match transform {
         Transform::_90 => image::imageops::rotate90(&image).into(),
         Transform::_180 => image::imageops::rotate180(&image).into(),
@@ -38,7 +30,11 @@ pub(crate) fn rotate_image_buffer(
         _ => image,
     };
 
-    let scale = rotated_image.width() as f64 / logical_width as f64;
+    if logical_size.width == 0 {
+        return rotated_image;
+    }
+
+    let scale = rotated_image.width() as f64 / logical_size.width as f64;
     // The amount of scaling left to perform.
     let scaling_left = max_scale / scale;
     if scaling_left <= 1.0 {
@@ -57,4 +53,48 @@ pub(crate) fn rotate_image_buffer(
         image::imageops::FilterType::Gaussian,
     )
     .into()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use image::RgbaImage;
+
+    #[test]
+    fn test_rotate_90_scaling() {
+        // Native 1920x1080 buffer, rotated 90 degrees
+        let img = DynamicImage::ImageRgba8(RgbaImage::new(1920, 1080));
+        // Logical size in Wayland has transform already applied (1080x1920)
+        let logical_size = Size {
+            width: 1080,
+            height: 1920,
+        };
+        let rotated = rotate_image_buffer(img, Transform::_90, logical_size, 1.0);
+        assert_eq!(rotated.width(), 1080);
+        assert_eq!(rotated.height(), 1920);
+    }
+
+    #[test]
+    fn test_rotate_270_scaling() {
+        let img = DynamicImage::ImageRgba8(RgbaImage::new(1920, 1080));
+        let logical_size = Size {
+            width: 1080,
+            height: 1920,
+        };
+        let rotated = rotate_image_buffer(img, Transform::_270, logical_size, 1.0);
+        assert_eq!(rotated.width(), 1080);
+        assert_eq!(rotated.height(), 1920);
+    }
+
+    #[test]
+    fn test_rotate_180_scaling() {
+        let img = DynamicImage::ImageRgba8(RgbaImage::new(1920, 1080));
+        let logical_size = Size {
+            width: 1920,
+            height: 1080,
+        };
+        let rotated = rotate_image_buffer(img, Transform::_180, logical_size, 1.0);
+        assert_eq!(rotated.width(), 1920);
+        assert_eq!(rotated.height(), 1080);
+    }
 }
